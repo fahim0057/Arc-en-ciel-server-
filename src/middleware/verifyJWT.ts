@@ -1,6 +1,23 @@
 import type { NextFunction, Request, Response } from "express";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  name?: string;
+}
+
+// Adds `req.user` to Express's Request type.
+// It lives in this file because every protected route already imports it,
+// so TypeScript always sees it, locally and on Vercel.
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthUser;
+    }
+  }
+}
+
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
 function getJwks() {
@@ -41,7 +58,6 @@ export async function verifyJWT(req: Request, res: Response, next: NextFunction)
     };
     next();
   } catch (err) {
-    // Keep this log while developing: it says exactly why a token was rejected
     console.error("JWT verification failed:", err instanceof Error ? err.message : err);
     res.status(401).json({ message: "Invalid or expired token" });
   }
